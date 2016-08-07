@@ -3,28 +3,41 @@ import Html.App as App
 import Collage as GC
 import Collage exposing (defaultLine)
 import Element exposing (toHtml, image)
+import Mouse exposing (Position)
 import Color as Color
 import ChessTypes exposing (..)
 import View exposing (view)
 
-initialBoard =
-    List.concat
-        [
-            List.map (\i -> (White, Pawn, (i, 1))) [0 .. 7],
-            List.map (\i -> (Black, Pawn, (i, 6))) [0 .. 7],
-            [ (White, 0), (Black, 7)]
-            |> List.map (\(clr, y) ->
-                    [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook]
-                    |> List.indexedMap (\x pc -> (clr, pc, (x, y)))
-                )
-            |> List.concat
-        ]
-
 main =
-    App.beginnerProgram { model = initialBoard, view = view, update = update }
+    App.program
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
 
-type Msg = Noop
+init : (Model, Cmd Msg)
+init =
+    ({ board = initialBoard, markedSquare = Nothing }, Cmd.none)
 
+positionToCoord : Position -> Maybe (Int, Int)
+positionToCoord pos =
+    let
+        x = (pos.x - 5) // 100
+        y = (pos.y - 5) // 100
+    in
+        if x > 7 || y > 7 then Nothing else Just (x, 7 - y)
 
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-    model
+    case msg of
+        Noop ->
+            (model, Cmd.none)
+        ClickAt pos ->
+            ({ model | markedSquare = positionToCoord pos }, Cmd.none)
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Mouse.clicks ClickAt
+        ]

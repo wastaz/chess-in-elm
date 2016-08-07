@@ -1,6 +1,7 @@
 module View exposing (view)
 
-import Collage exposing (defaultLine, rect, filled, outlined, moveX, moveY, move, collage, toForm)
+import Collage exposing (defaultLine, rect, filled, alpha, outlined, moveX, moveY, move, collage, toForm)
+import Html as Html
 import Element exposing (toHtml, image)
 import Color as Color
 import ChessTypes exposing (..)
@@ -67,6 +68,19 @@ drawPieces pcs =
             |> move (positionToCoords position)
         )
 
+drawMarkedSquare : Maybe Coord -> List Collage.Form
+drawMarkedSquare square =
+    case square of
+        Nothing -> []
+        Just pos ->
+            [
+                rect 100 100
+                |> filled Color.blue
+                |> alpha 0.5
+                |> move (positionToCoords pos)
+            ]
+
+view : Model -> Html.Html Msg
 view model =
     List.concat
         [
@@ -74,7 +88,8 @@ view model =
                 rect 805 805 |> outlined { defaultLine | width = 5 },
                 drawBoard Black |> toForm
             ],
-            drawPieces model
+            drawPieces model.board,
+            drawMarkedSquare model.markedSquare
         ]
 
     |> collage 810 810
