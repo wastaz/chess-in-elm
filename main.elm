@@ -18,15 +18,18 @@ main =
 
 init : (Model, Cmd Msg)
 init =
-    ({ board = initialBoard, markedSquare = Nothing }, Cmd.none)
+    ({ board = initialBoard
+     , markedSquares = []
+     , activePlayer = White
+     }, Cmd.none)
 
-positionToCoord : Position -> Maybe (Int, Int)
+positionToCoord : Position -> Maybe BoardPosition
 positionToCoord pos =
     let
         x = (pos.x - 5) // 100
         y = (pos.y - 5) // 100
     in
-        if x > 7 || y > 7 then Nothing else Just (x, 7 - y)
+        if x > 7 || y > 7 then Nothing else Just { x = x, y = 7 - y}
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -34,7 +37,9 @@ update msg model =
         Noop ->
             (model, Cmd.none)
         ClickAt pos ->
-            ({ model | markedSquare = positionToCoord pos }, Cmd.none)
+            case positionToCoord pos of
+                Nothing -> ({ model | markedSquares = []}, Cmd.none)
+                Just c -> ({ model | markedSquares = [c]}, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

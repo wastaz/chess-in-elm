@@ -14,13 +14,17 @@ type Player
     = Black
     | White
 
-type alias Coord = (Int, Int)
+type alias BoardPosition =
+    { x : Int
+    , y : Int
+    }
 
-type alias Piece = (Player, ChessPiece, Coord)
+type alias Piece = (Player, ChessPiece, BoardPosition)
 
 type alias Model =
     { board : List Piece
-    , markedSquare : Maybe Coord
+    , markedSquares : List BoardPosition
+    , activePlayer : Player
     }
 
 type Msg
@@ -37,12 +41,12 @@ initialBoard : List Piece
 initialBoard =
     List.concat
         [
-            List.map (\i -> (White, Pawn, (i, 1))) [0 .. 7],
-            List.map (\i -> (Black, Pawn, (i, 6))) [0 .. 7],
+            List.map (\i -> (White, Pawn, { x = i, y = 1})) [0 .. 7],
+            List.map (\i -> (Black, Pawn, { x = i, y = 6})) [0 .. 7],
             [ (White, 0), (Black, 7)]
             |> List.map (\(clr, y) ->
                     [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook]
-                    |> List.indexedMap (\x pc -> (clr, pc, (x, y)))
+                    |> List.indexedMap (\x pc -> (clr, pc, { x = x, y = y}))
                 )
             |> List.concat
         ]

@@ -35,10 +35,11 @@ drawBoard clr =
         )
     |> collage 800 800
 
-positionToCoords (x, y) =
+positionToCoords : BoardPosition -> (Float, Float)
+positionToCoords bp =
     let
-        cx = (toFloat x) * 100.0 - 350.0
-        cy = (toFloat y) * 100.0 - 350.0
+        cx = (toFloat bp.x) * 100.0 - 350.0
+        cy = (toFloat bp.y) * 100.0 - 350.0
     in
         (cx, cy)
 
@@ -68,17 +69,12 @@ drawPieces pcs =
             |> move (positionToCoords position)
         )
 
-drawMarkedSquare : Maybe Coord -> List Collage.Form
-drawMarkedSquare square =
-    case square of
-        Nothing -> []
-        Just pos ->
-            [
-                rect 100 100
-                |> filled Color.blue
-                |> alpha 0.5
-                |> move (positionToCoords pos)
-            ]
+drawMarkedSquare : BoardPosition -> Collage.Form
+drawMarkedSquare pos =
+    rect 100 100
+    |> filled Color.blue
+    |> alpha 0.5
+    |> move (positionToCoords pos)
 
 view : Model -> Html.Html Msg
 view model =
@@ -89,7 +85,7 @@ view model =
                 drawBoard Black |> toForm
             ],
             drawPieces model.board,
-            drawMarkedSquare model.markedSquare
+            List.map drawMarkedSquare model.markedSquares
         ]
 
     |> collage 810 810
