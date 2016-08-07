@@ -7,6 +7,7 @@ import Mouse exposing (Position)
 import Color as Color
 import ChessTypes exposing (..)
 import View exposing (view)
+import Moves exposing (pieceAt)
 
 main =
     App.program
@@ -31,15 +32,22 @@ positionToCoord pos =
     in
         if x > 7 || y > 7 then Nothing else Just { x = x, y = 7 - y}
 
+bind : (a -> Maybe b) -> Maybe a -> Maybe b
+bind fn o =
+    Maybe.andThen o fn
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         Noop ->
             (model, Cmd.none)
         ClickAt pos ->
-            case positionToCoord pos of
-                Nothing -> ({ model | markedSquares = []}, Cmd.none)
-                Just c -> ({ model | markedSquares = [c]}, Cmd.none)
+            pos
+            |> positionToCoord
+            |> bind (pieceAt model.board)
+            |> Maybe.map (\(_, _, c) -> { model | markedSquares = [c]})
+            |> Maybe.withDefault { model | markedSquares = []}
+            |> \m -> (m, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
