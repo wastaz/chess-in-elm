@@ -32,8 +32,8 @@ validMoves ( player, piece, pos ) =
                 , validRookMoves player pos
                 ]
 
-        _ ->
-            []
+        King ->
+            validKingMoves player pos
 
 
 move : List Piece -> Piece -> BoardPosition -> Maybe (List Piece)
@@ -97,6 +97,13 @@ validPawnMoves player pos =
                     Nothing
                 ]
 
+
+validKingMoves : Player -> BoardPosition -> List BoardPosition
+validKingMoves player pos =
+    [ -1, 0, 1 ]
+        |> List.map (\x -> [ -1, 0, 1 ] |> List.map (\y -> (incX x >> incY y) pos))
+        |> List.concat
+        |> List.filter ((/=) pos)
 
 validRookMoves : Player -> BoardPosition -> List BoardPosition
 validRookMoves player pos =
