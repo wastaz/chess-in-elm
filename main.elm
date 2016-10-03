@@ -4,9 +4,10 @@ import Html.App as App
 import Mouse exposing (Position)
 import ChessTypes exposing (..)
 import View exposing (view)
-import Moves exposing (pieceAt, validMoves)
+import Moves exposing (pieceAt, validMoves, move)
 
 
+main : Program Never
 main =
     App.program
         { init = init
@@ -47,12 +48,40 @@ bind fn o =
     Maybe.andThen o fn
 
 
+translateClickOnEmptySquare : Model -> BoardPosition -> Model
+translateClickOnEmptySquare model pos =
+    case model.activePiece of
+        Nothing ->
+            { model | markedSquares = [], activePiece = Nothing }
+
+        Just ( pl, pc, ps ) ->
+            let
+                moveResult =
+                    move model.board ( pl, pc, ps ) pos
+            in
+                case moveResult of
+                    Nothing ->
+                        model
+
+                    Just b ->
+                        { model | board = b, activePiece = Nothing, activePlayer = other model.activePlayer, markedSquares = [] }
+
+
+translateClickOnPieceSquare : Model -> BoardPosition -> Model
+translateClickOnPieceSquare model pos =
+    case pieceAt model.board pos of
+        Nothing ->
+            translateClickOnEmptySquare model pos
+
+        Just p ->
+            { model | markedSquares = validMoves p, activePiece = Just p }
+
+
 translateClick : Model -> Position -> Model
 translateClick model pos =
     pos
         |> positionToCoord
-        |> bind (pieceAt model.board)
-        |> Maybe.map (\p -> { model | markedSquares = validMoves p, activePiece = Just p })
+        |> Maybe.map (translateClickOnPieceSquare model)
         |> Maybe.withDefault { model | markedSquares = [], activePiece = Nothing }
 
 

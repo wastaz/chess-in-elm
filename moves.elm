@@ -1,4 +1,4 @@
-module Moves exposing (pieceAt, validMoves)
+module Moves exposing (pieceAt, validMoves, move)
 
 import Maybe
 import ChessTypes exposing (..)
@@ -19,6 +19,21 @@ validMoves ( player, piece, pos ) =
 
         _ ->
             []
+
+
+move : List Piece -> Piece -> BoardPosition -> Maybe (List Piece)
+move board piece pos =
+    if (validMoves piece |> List.member pos) then
+        Just <| performValidMove board piece pos
+    else
+        Nothing
+
+
+performValidMove : List Piece -> Piece -> BoardPosition -> List Piece
+performValidMove board ( pl, pc, ps ) pos =
+    board
+        |> List.filter ((/=) ( pl, pc, ps ))
+        |> (::) ( pl, pc, pos )
 
 
 filterMaybe : List (Maybe a) -> List a
