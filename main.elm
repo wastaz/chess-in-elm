@@ -100,7 +100,7 @@ translateClick model pos =
 
 withValidMoves : Model -> Model
 withValidMoves model =
-    { model | markedSquares = model.activePiece |> Maybe.map validMoves |> Maybe.withDefault [] }
+    { model | markedSquares = model.activePiece |> Maybe.map (validMoves model.board) |> Maybe.withDefault [] }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

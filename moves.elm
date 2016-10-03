@@ -11,8 +11,8 @@ pieceAt pieces pos =
         |> List.head
 
 
-validMoves : Piece -> List BoardPosition
-validMoves ( player, piece, pos ) =
+validMoves : List Piece -> Piece -> List BoardPosition
+validMoves board ( player, piece, pos ) =
     case piece of
         Pawn ->
             validPawnMoves player pos
@@ -21,7 +21,7 @@ validMoves ( player, piece, pos ) =
             validRookMoves player pos
 
         Knight ->
-            validKnightMoves player pos
+            validKnightMoves board player pos
 
         Bishop ->
             validBishopMoves player pos
@@ -38,7 +38,7 @@ validMoves ( player, piece, pos ) =
 
 move : List Piece -> Piece -> BoardPosition -> Maybe (List Piece)
 move board piece pos =
-    if (validMoves piece |> List.member pos) then
+    if (validMoves board piece |> List.member pos) then
         Just <| performValidMove board piece pos
     else
         Nothing
@@ -105,6 +105,7 @@ validKingMoves player pos =
         |> List.concat
         |> List.filter ((/=) pos)
 
+
 validRookMoves : Player -> BoardPosition -> List BoardPosition
 validRookMoves player pos =
     List.concat
@@ -136,8 +137,14 @@ validBishopMoves player pos =
         ]
 
 
-validKnightMoves : Player -> BoardPosition -> List BoardPosition
-validKnightMoves player pos =
+isJust : Maybe a -> Bool
+isJust =
+    Maybe.map (\_ -> True) >> Maybe.withDefault False
+
+
+validKnightMoves : List Piece -> Player -> BoardPosition -> List BoardPosition
+validKnightMoves board player pos =
     [ ( 2, 1 ), ( -2, 1 ), ( 2, -1 ), ( -2, -1 ), ( 1, 2 ), ( -1, 2 ), ( 1, -2 ), ( -1, -2 ) ]
         |> List.map (\( x, y ) -> (incX x >> incY y) pos)
         |> List.filter (\p -> p.x >= 0 && p.y >= 0)
+        |> List.filter (pieceAt board >> Maybe.map (\(pl, _, _) -> pl /= player) >> Maybe.withDefault True)
