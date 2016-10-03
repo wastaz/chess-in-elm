@@ -17,6 +17,21 @@ validMoves ( player, piece, pos ) =
         Pawn ->
             validPawnMoves player pos
 
+        Rook ->
+            validRookMoves player pos
+
+        Knight ->
+            validKnightMoves player pos
+
+        Bishop ->
+            validBishopMoves player pos
+
+        Queen ->
+            List.concat
+                [ validBishopMoves player pos
+                , validRookMoves player pos
+                ]
+
         _ ->
             []
 
@@ -32,6 +47,7 @@ move board piece pos =
 performValidMove : List Piece -> Piece -> BoardPosition -> List Piece
 performValidMove board ( pl, pc, ps ) pos =
     board
+        |> List.filter (\( _, _, c ) -> c /= pos)
         |> List.filter ((/=) ( pl, pc, ps ))
         |> (::) ( pl, pc, pos )
 
@@ -41,22 +57,80 @@ filterMaybe lst =
     List.filterMap identity lst
 
 
+incX : Int -> BoardPosition -> BoardPosition
+incX i p =
+    { p | x = p.x + i }
+
+
+decX : Int -> BoardPosition -> BoardPosition
+decX i p =
+    { p | x = p.x - i }
+
+
+incY : Int -> BoardPosition -> BoardPosition
+incY i p =
+    { p | y = p.y + i }
+
+
+decY : Int -> BoardPosition -> BoardPosition
+decY i p =
+    { p | y = p.y - i }
+
+
 validPawnMoves : Player -> BoardPosition -> List BoardPosition
 validPawnMoves player pos =
     filterMaybe <|
         case player of
             White ->
-                [ Just { pos | y = pos.y + 1 }
+                [ Just <| incY 1 pos
                 , if pos.y == 1 then
-                    Just { pos | y = pos.y + 2 }
+                    Just <| incY 2 pos
                   else
                     Nothing
                 ]
 
             Black ->
-                [ Just { pos | y = pos.y - 1 }
+                [ Just <| decY 1 pos
                 , if pos.y == 6 then
-                    Just { pos | y = pos.y - 2 }
+                    Just <| decY 2 pos
                   else
                     Nothing
                 ]
+
+
+validRookMoves : Player -> BoardPosition -> List BoardPosition
+validRookMoves player pos =
+    List.concat
+        [ [0..7] |> List.map (\x -> { pos | x = x })
+        , [0..7] |> List.map (\y -> { pos | y = y })
+        ]
+        |> List.filter ((/=) pos)
+
+
+validBishopMoves : Player -> BoardPosition -> List BoardPosition
+validBishopMoves player pos =
+    List.concat
+        [ [1..pos.x]
+            |> List.map
+                (\i ->
+                    [ (decX i >> incY i) pos
+                    , (decX i >> decY i) pos
+                    ]
+                )
+            |> List.concat
+        , [1..(7 - pos.x)]
+            |> List.map
+                (\i ->
+                    [ (incX i >> incY i) pos
+                    , (incX i >> decY i) pos
+                    ]
+                )
+            |> List.concat
+        ]
+
+
+validKnightMoves : Player -> BoardPosition -> List BoardPosition
+validKnightMoves player pos =
+    [ ( 2, 1 ), ( -2, 1 ), ( 2, -1 ), ( -2, -1 ), ( 1, 2 ), ( -1, 2 ), ( 1, -2 ), ( -1, -2 ) ]
+        |> List.map (\( x, y ) -> (incX x >> incY y) pos)
+        |> List.filter (\p -> p.x >= 0 && p.y >= 0)
