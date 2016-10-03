@@ -1,13 +1,11 @@
-import Html exposing (text)
+module Main exposing (..)
+
 import Html.App as App
-import Collage as GC
-import Collage exposing (defaultLine)
-import Element exposing (toHtml, image)
 import Mouse exposing (Position)
-import Color as Color
 import ChessTypes exposing (..)
 import View exposing (view)
-import Moves exposing (pieceAt)
+import Moves exposing (pieceAt, validMoves)
+
 
 main =
     App.program
@@ -17,37 +15,56 @@ main =
         , subscriptions = subscriptions
         }
 
-init : (Model, Cmd Msg)
+
+init : ( Model, Cmd Msg )
 init =
-    ({ board = initialBoard
-     , markedSquares = []
-     , activePlayer = White
-     }, Cmd.none)
+    ( { board = initialBoard
+      , markedSquares = []
+      , activePlayer = White
+      , activePiece = Nothing
+      }
+    , Cmd.none
+    )
+
 
 positionToCoord : Position -> Maybe BoardPosition
 positionToCoord pos =
     let
-        x = (pos.x - 5) // 100
-        y = (pos.y - 5) // 100
+        x =
+            (pos.x - 5) // 100
+
+        y =
+            (pos.y - 5) // 100
     in
-        if x > 7 || y > 7 then Nothing else Just { x = x, y = 7 - y}
+        if x > 7 || y > 7 then
+            Nothing
+        else
+            Just { x = x, y = 7 - y }
+
 
 bind : (a -> Maybe b) -> Maybe a -> Maybe b
 bind fn o =
     Maybe.andThen o fn
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+translateClick : Model -> Position -> Model
+translateClick model pos =
+    pos
+        |> positionToCoord
+        |> bind (pieceAt model.board)
+        |> Maybe.map (\p -> { model | markedSquares = validMoves p, activePiece = Just p })
+        |> Maybe.withDefault { model | markedSquares = [], activePiece = Nothing }
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Noop ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
+
         ClickAt pos ->
-            pos
-            |> positionToCoord
-            |> bind (pieceAt model.board)
-            |> Maybe.map (\(_, _, c) -> { model | markedSquares = [c]})
-            |> Maybe.withDefault { model | markedSquares = []}
-            |> \m -> (m, Cmd.none)
+            ( translateClick model pos, Cmd.none )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
