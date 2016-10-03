@@ -48,33 +48,46 @@ bind fn o =
     Maybe.andThen o fn
 
 
+performMove : Model -> BoardPosition -> Piece -> Model
+performMove model pos pc =
+    case move model.board pc pos of
+        Nothing ->
+            let
+                existing =
+                    pieceAt model.board pos
+            in
+                { model | activePiece = existing }
+
+        Just b ->
+            { model
+                | board = b
+                , activePiece = Nothing
+                , activePlayer = other model.activePlayer
+            }
+
+
 translateClickOnEmptySquare : Model -> BoardPosition -> Model
 translateClickOnEmptySquare model pos =
-    case model.activePiece of
-        Nothing ->
-            { model | markedSquares = [], activePiece = Nothing }
-
-        Just ( pl, pc, ps ) ->
-            let
-                moveResult =
-                    move model.board ( pl, pc, ps ) pos
-            in
-                case moveResult of
-                    Nothing ->
-                        model
-
-                    Just b ->
-                        { model | board = b, activePiece = Nothing, activePlayer = other model.activePlayer, markedSquares = [] }
+    model.activePiece
+        |> Maybe.map (performMove model pos)
+        |> Maybe.withDefault { model | activePiece = Nothing }
 
 
 translateClickOnPieceSquare : Model -> BoardPosition -> Model
 translateClickOnPieceSquare model pos =
-    case pieceAt model.board pos of
-        Nothing ->
-            translateClickOnEmptySquare model pos
+    let
+        clickedPiece =
+            pieceAt model.board pos
+    in
+        case ( clickedPiece, model.activePiece ) of
+            ( Nothing, _ ) ->
+                translateClickOnEmptySquare model pos
 
-        Just p ->
-            { model | markedSquares = validMoves p, activePiece = Just p }
+            ( Just p, Nothing ) ->
+                { model | activePiece = Just p }
+
+            ( Just p, Just ap ) ->
+                translateClickOnEmptySquare model pos
 
 
 translateClick : Model -> Position -> Model
@@ -82,7 +95,12 @@ translateClick model pos =
     pos
         |> positionToCoord
         |> Maybe.map (translateClickOnPieceSquare model)
-        |> Maybe.withDefault { model | markedSquares = [], activePiece = Nothing }
+        |> Maybe.withDefault { model | activePiece = Nothing }
+
+
+withValidMoves : Model -> Model
+withValidMoves model =
+    { model | markedSquares = model.activePiece |> Maybe.map validMoves |> Maybe.withDefault [] }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -92,7 +110,7 @@ update msg model =
             ( model, Cmd.none )
 
         ClickAt pos ->
-            ( translateClick model pos, Cmd.none )
+            ( translateClick model pos |> withValidMoves, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
