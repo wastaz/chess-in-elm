@@ -24,8 +24,10 @@ type alias BoardPosition =
 
 
 type alias Piece =
-    ( Player, ChessPiece, BoardPosition )
-
+    { owner : Player
+    , kind : ChessPiece
+    , position : BoardPosition
+    }
 
 type alias Model =
     { board : List Piece
@@ -53,13 +55,13 @@ other player =
 initialBoard : List Piece
 initialBoard =
     List.concat
-        [ List.map (\i -> ( White, Pawn, { x = i, y = 1 } )) [0..7]
-        , List.map (\i -> ( Black, Pawn, { x = i, y = 6 } )) [0..7]
+        [ List.map (\i -> { owner = White, kind = Pawn, position = { x = i, y = 1 } }) [0..7]
+        , List.map (\i -> { owner = Black, kind = Pawn, position = { x = i, y = 6 } }) [0..7]
         , [ ( White, 0 ), ( Black, 7 ) ]
             |> List.map
                 (\( clr, y ) ->
                     [ Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook ]
-                        |> List.indexedMap (\x pc -> ( clr, pc, { x = x, y = y } ))
+                        |> List.indexedMap (\x pc -> { owner = clr, kind = pc, position = { x = x, y = y } })
                 )
             |> List.concat
         ]

@@ -50,13 +50,17 @@ bind fn o =
 
 performMove : Model -> BoardPosition -> Piece -> Model
 performMove model pos pc =
-    case move model.board pc pos of
+    case move model.board pc pos |> Debug.log "model" of
         Nothing ->
             let
                 existing =
                     pieceAt model.board pos
+                pl = Maybe.map (.owner) existing |> Maybe.withDefault model.activePlayer
             in
-                { model | activePiece = existing }
+                if pl == model.activePlayer then
+                    { model | activePiece = existing }
+                else
+                    model
 
         Just b ->
             { model
@@ -84,7 +88,10 @@ translateClickOnPieceSquare model pos =
                 translateClickOnEmptySquare model pos
 
             ( Just p, Nothing ) ->
-                { model | activePiece = Just p }
+                if p.owner == model.activePlayer then 
+                    { model | activePiece = Just p }
+                else 
+                    model
 
             ( Just p, Just ap ) ->
                 translateClickOnEmptySquare model pos

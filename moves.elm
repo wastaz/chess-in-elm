@@ -7,33 +7,33 @@ import ChessTypes exposing (..)
 pieceAt : List Piece -> BoardPosition -> Maybe Piece
 pieceAt pieces pos =
     pieces
-        |> List.filter (\( _, _, pcpos ) -> pos == pcpos)
+        |> List.filter (.position >> (==) pos)
         |> List.head
 
 
 validMoves : List Piece -> Piece -> List BoardPosition
-validMoves board ( player, piece, pos ) =
-    case piece of
+validMoves board piece =
+    case piece.kind of
         Pawn ->
-            validPawnMoves board player pos
+            validPawnMoves board piece.owner piece.position
 
         Rook ->
-            validRookMoves board player pos
+            validRookMoves board piece.owner piece.position
 
         Knight ->
-            validKnightMoves board player pos
+            validKnightMoves board piece.owner piece.position
 
         Bishop ->
-            validBishopMoves board player pos
+            validBishopMoves board piece.owner piece.position
 
         Queen ->
             List.concat
-                [ validBishopMoves board player pos
-                , validRookMoves board player pos
+                [ validBishopMoves board piece.owner piece.position
+                , validRookMoves board piece.owner piece.position
                 ]
 
         King ->
-            validKingMoves board player pos
+            validKingMoves board piece.owner piece.position
 
 
 move : List Piece -> Piece -> BoardPosition -> Maybe (List Piece)
@@ -45,11 +45,11 @@ move board piece pos =
 
 
 performValidMove : List Piece -> Piece -> BoardPosition -> List Piece
-performValidMove board ( pl, pc, ps ) pos =
+performValidMove board piece pos =
     board
-        |> List.filter (\( _, _, c ) -> c /= pos)
-        |> List.filter ((/=) ( pl, pc, ps ))
-        |> (::) ( pl, pc, pos )
+        |> List.filter (.position >> (/=) pos)
+        |> List.filter ((/=) piece)
+        |> (::) { piece | position = pos }
 
 
 isJust : Maybe a -> Bool
@@ -64,7 +64,7 @@ hasAnyPiece board =
 
 hasPlayerPiece : Player -> List Piece -> BoardPosition -> Bool
 hasPlayerPiece player board =
-    pieceAt board >> Maybe.map (\( pl, _, _ ) -> pl == player) >> Maybe.withDefault False
+    pieceAt board >> Maybe.map (.owner >> (==) player) >> Maybe.withDefault False
 
 
 filterMaybe : List (Maybe a) -> List a

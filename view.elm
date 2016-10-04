@@ -2,6 +2,7 @@ module View exposing (view)
 
 import Collage exposing (defaultLine, rect, filled, alpha, outlined, moveX, moveY, move, collage, toForm)
 import Html as Html
+import Html.Attributes as Attr
 import Element exposing (toHtml, image)
 import Color as Color
 import ChessTypes exposing (..)
@@ -106,15 +107,15 @@ imageFor player piece =
         "assets/" ++ piecestr ++ "_" ++ playerstr ++ ".png"
 
 
-drawPieces : List ( Player, ChessPiece, BoardPosition ) -> List Collage.Form
+drawPieces : List Piece -> List Collage.Form
 drawPieces pcs =
     pcs
         |> List.map
-            (\( player, piece, position ) ->
-                imageFor player piece
+            (\piece ->
+                imageFor piece.owner piece.kind
                     |> image 50 50
                     |> toForm
-                    |> move (positionToCoords position)
+                    |> move (positionToCoords piece.position)
             )
 
 
@@ -136,15 +137,43 @@ drawActivePieceSquare =
     markSquareWithColor Color.yellow
 
 
-view : Model -> Html.Html Msg
-view model =
+viewBoard : Model -> Html.Html Msg
+viewBoard model =
     List.concat
         [ [ rect 805 805 |> outlined { defaultLine | width = 5 }
           , drawBoard Black |> toForm
           ]
         , drawPieces model.board
         , List.map drawMarkedSquare model.markedSquares
-        , [ model.activePiece |> Maybe.map (\(_, _, c) -> drawActivePieceSquare c) ] |> List.filterMap identity
+        , [ model.activePiece |> Maybe.map (.position >> drawActivePieceSquare) ] |> List.filterMap identity
         ]
         |> collage 810 810
         |> toHtml
+
+
+playerToString : Player -> String
+playerToString player =
+    case player of
+        White ->
+            "White"
+
+        Black ->
+            "Black"
+
+
+viewSidebar : Model -> Html.Html Msg
+viewSidebar model =
+    Html.div [ Attr.style [ ( "border", "5px solid black" ), ("padding", "5px"), ("text-align", "center") ] ]
+        [ Html.div []
+            [ Html.h1 [] [ Html.text "Current player" ]
+            , Html.p [] [ Html.text <| playerToString model.activePlayer ]
+            ]
+        ]
+
+
+view : Model -> Html.Html Msg
+view model =
+    Html.div []
+        [ Html.div [ Attr.style [ ( "float", "left" ) ] ] [ viewBoard model ]
+        , Html.div [ Attr.style [ ( "float", "left" ), ( "margin-left", "50px" ) ] ] [ viewSidebar model ]
+        ]
