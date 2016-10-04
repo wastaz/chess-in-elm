@@ -57,6 +57,19 @@ isJust =
     Maybe.map (\_ -> True) >> Maybe.withDefault False
 
 
+kingsThatCannotMove : List Piece -> List Piece
+kingsThatCannotMove board =
+    board 
+        |> List.filter (\p -> p.kind == King && (not <| List.isEmpty <| validMoves board p )) 
+
+
+piecesThreatening : List Piece -> Piece -> List Piece
+piecesThreatening board piece =
+    board 
+        |> List.filter (\p -> p.owner /= piece.owner)
+        |> List.filter (validMoves board >> List.member piece.position)
+
+
 hasAnyPiece : List Piece -> BoardPosition -> Bool
 hasAnyPiece board =
     pieceAt board >> isJust
