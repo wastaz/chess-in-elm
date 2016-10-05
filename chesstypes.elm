@@ -1,7 +1,7 @@
 module ChessTypes exposing (..)
 
 import Mouse exposing (Position)
-
+import String
 
 type ChessPiece
     = Pawn
@@ -29,8 +29,13 @@ type alias Piece =
     , position : BoardPosition
     }
 
+
+type alias Board =
+    List Piece
+
+
 type alias Model =
-    { board : List Piece
+    { board : Board
     , markedSquares : List BoardPosition
     , activePiece : Maybe Piece
     , activePlayer : Player
@@ -65,3 +70,31 @@ initialBoard =
                 )
             |> List.concat
         ]
+
+
+pieceToStr : Piece -> String
+pieceToStr piece =
+    case piece.kind of
+        Pawn -> "P"
+        Rook -> "R"
+        Knight -> "K"
+        Bishop -> "B"
+        Queen -> "Q"
+        King -> "K"
+
+boardToStr : Board -> String
+boardToStr board =
+    [0..7]
+    |> List.map (\y -> 
+        [0..7] 
+        |> List.map (\x ->
+            board
+            |> List.filter (.position >> (==) { x = x, y = y})
+            |> List.map pieceToStr
+            |> List.head
+            |> Maybe.withDefault "_"
+        )
+        |> String.concat
+        |> \s -> s ++ (String.fromChar '\n')
+    )
+    |> String.concat

@@ -43,11 +43,6 @@ positionToCoord pos =
             Just { x = x, y = 7 - y }
 
 
-bind : (a -> Maybe b) -> Maybe a -> Maybe b
-bind fn o =
-    Maybe.andThen o fn
-
-
 performMove : Model -> BoardPosition -> Piece -> Model
 performMove model pos pc =
     case move model.board pc pos |> Debug.log "model" of
@@ -55,7 +50,9 @@ performMove model pos pc =
             let
                 existing =
                     pieceAt model.board pos
-                pl = Maybe.map (.owner) existing |> Maybe.withDefault model.activePlayer
+
+                pl =
+                    Maybe.map (.owner) existing |> Maybe.withDefault model.activePlayer
             in
                 if pl == model.activePlayer then
                     { model | activePiece = existing }
@@ -88,9 +85,9 @@ translateClickOnPieceSquare model pos =
                 translateClickOnEmptySquare model pos
 
             ( Just p, Nothing ) ->
-                if p.owner == model.activePlayer then 
+                if p.owner == model.activePlayer then
                     { model | activePiece = Just p }
-                else 
+                else
                     model
 
             ( Just p, Just ap ) ->
