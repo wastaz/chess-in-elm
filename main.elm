@@ -20,7 +20,7 @@ main =
 init : ( Model, Cmd Msg )
 init =
     ( { board = initialBoard
-      , markedSquares = []
+      , possibleMoves = []
       , activePlayer = White
       , activePiece = Nothing
       }
@@ -45,7 +45,7 @@ positionToCoord pos =
 
 performMove : Model -> BoardPosition -> Piece -> Model
 performMove model pos pc =
-    case move model.board pc pos |> Debug.log "model" of
+    case move model.board pc pos of
         Nothing ->
             let
                 existing =
@@ -104,7 +104,7 @@ translateClick model pos =
 
 withValidMoves : Model -> Model
 withValidMoves model =
-    { model | markedSquares = model.activePiece |> Maybe.map (validMoves model.board) |> Maybe.withDefault [] }
+    { model | possibleMoves = model.activePiece |> Maybe.map (validMoves model.board) |> Maybe.withDefault [] }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

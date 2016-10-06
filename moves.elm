@@ -12,46 +12,46 @@ pieceAt pieces pos =
         |> List.head
 
 
-validMoves : Board -> Piece -> List BoardPosition
+validMoves : Board -> Piece -> List Move
 validMoves board piece =
     generateMoves board piece
-        |> List.filter (not << putsKingInCheck board piece)
+        |> List.filter (not << putsKingInCheck board)
 
 
-generateMoves : Board -> Piece -> List BoardPosition
+generateMoves : Board -> Piece -> List Move
 generateMoves board piece =
     case piece.kind of
         Pawn ->
-            validPawnMoves board piece.owner piece.position
+            validPawnMoves board piece
 
         Rook ->
-            validRookMoves board piece.owner piece.position
+            validRookMoves board piece
 
         Knight ->
-            validKnightMoves board piece.owner piece.position
+            validKnightMoves board piece
 
         Bishop ->
-            validBishopMoves board piece.owner piece.position
+            validBishopMoves board piece
 
         Queen ->
             List.concat
-                [ validBishopMoves board piece.owner piece.position
-                , validRookMoves board piece.owner piece.position
+                [ validBishopMoves board piece
+                , validRookMoves board piece
                 ]
 
         King ->
             validKingMoves board piece
 
 
-move : List Piece -> Piece -> BoardPosition -> Maybe (List Piece)
+move : Board -> Piece -> BoardPosition -> Maybe Board
 move board piece pos =
-    if (validMoves board piece |> List.member pos) then
+    if (validMoves board piece |> List.map .position |> List.member pos) then
         Just <| performValidMove board piece pos
     else
         Nothing
 
 
-performValidMove : List Piece -> Piece -> BoardPosition -> List Piece
+performValidMove : Board -> Piece -> BoardPosition -> List Piece
 performValidMove board piece pos =
     board
         |> List.filter (.position >> (/=) pos)
@@ -65,13 +65,6 @@ kingsThatCannotMove board =
         |> List.filter (\p -> p.kind == King && (not <| List.isEmpty <| validMoves board p))
 
 
-piecesThreatening : List Piece -> Piece -> List Piece
-piecesThreatening board piece =
-    board
-        |> List.filter (.owner >> (/=) piece.owner)
-        |> List.filter (validMoves board >> List.member piece.position)
-
-
 findKing : Player -> Board -> Piece
 findKing player board =
     board
@@ -80,18 +73,18 @@ findKing player board =
         |> Maybe.withDefault { owner = player, kind = King, position = { x = 0, y = 0 } }
 
 
-putsKingInCheck : Board -> Piece -> BoardPosition -> Bool
-putsKingInCheck board piece pos =
+putsKingInCheck : Board -> Move -> Bool
+putsKingInCheck board { piece, position } =
     let
         newboard =
-            performValidMove board piece pos
+            performValidMove board piece position
 
         myking =
             newboard |> findKing piece.owner
     in
         newboard
             |> List.filter (.owner >> (/=) piece.owner)
-            |> List.filter (\p -> p |> generateMoves newboard |> List.member myking.position)
+            |> List.filter (\p -> p |> generateMoves newboard |> List.map .position |> List.member myking.position)
             |> (not << List.isEmpty)
 
 
@@ -135,11 +128,11 @@ getPlayerFirstRowY player =
             6
 
 
-validPawnMoves : List Piece -> Player -> BoardPosition -> List BoardPosition
-validPawnMoves board player pos =
+validPawnMoves : List Piece -> Piece -> List Move
+validPawnMoves board piece =
     let
         moveY =
-            case player of
+            case piece.owner of
                 White ->
                     incY
 
@@ -147,63 +140,92 @@ validPawnMoves board player pos =
                     decY
 
         firstRowIdx =
-            getPlayerFirstRowY player
+            getPlayerFirstRowY piece.owner
 
         singleMove =
-            moveY 1 pos
+            moveY 1 piece.position
 
         doubleMove =
-            moveY 2 pos
+            moveY 2 piece.position
 
         leftKillMove =
-            pos |> moveY 1 |> decX 1
+            piece.position |> moveY 1 |> decX 1
 
         rightKillMove =
-            pos |> moveY 1 |> incX 1
+            piece.position |> moveY 1 |> incX 1
     in
         [ maybeFromPredicate (not << hasAnyPiece board) singleMove
-        , maybeFromPredicate (\m -> pos.y == firstRowIdx && not (hasAnyPiece board m)) doubleMove
-        , maybeFromPredicate (hasPlayerPiece (other player) board) leftKillMove
-        , maybeFromPredicate (hasPlayerPiece (other player) board) rightKillMove
+        , maybeFromPredicate (\m -> piece.position.y == firstRowIdx && not (hasAnyPiece board m)) doubleMove
+        , maybeFromPredicate (hasPlayerPiece (other piece.owner) board) leftKillMove
+        , maybeFromPredicate (hasPlayerPiece (other piece.owner) board) rightKillMove
         ]
             |> filterMaybe
+            |> toMoves board piece
 
 
-validKingMoves : List Piece -> Piece -> List BoardPosition
+validKingMoves : Board -> Piece -> List Move
 validKingMoves board piece =
     [ -1, 0, 1 ]
         |> List.map (\x -> [ -1, 0, 1 ] |> List.map (\y -> (incX x >> incY y) piece.position))
         |> List.concat
         |> List.filter ((/=) piece.position)
         |> List.filter (not << hasPlayerPiece piece.owner board)
+        |> toMoves board piece
 
 
-validRookMoves : List Piece -> Player -> BoardPosition -> List BoardPosition
-validRookMoves board player pos =
-    List.concat
-        [ [pos.x + 1..7] |> List.map (\x -> { pos | x = x }) |> takeUntil (hasAnyPiece board)
-        , [0..pos.x - 1] |> List.reverse |> List.map (\x -> { pos | x = x }) |> takeUntil (hasAnyPiece board)
-        , [pos.y + 1..7] |> List.map (\y -> { pos | y = y }) |> takeUntil (hasAnyPiece board)
-        , [0..pos.y - 1] |> List.reverse |> List.map (\y -> { pos | y = y }) |> takeUntil (hasAnyPiece board)
-        ]
-        |> List.filter (not << hasPlayerPiece player board)
+validRookMoves : Board -> Piece -> List Move
+validRookMoves board piece =
+    let
+        pos =
+            piece.position
+    in
+        List.concat
+            [ [pos.x + 1..7] |> List.map (\x -> { pos | x = x }) |> takeUntil (hasAnyPiece board)
+            , [0..pos.x - 1] |> List.reverse |> List.map (\x -> { pos | x = x }) |> takeUntil (hasAnyPiece board)
+            , [pos.y + 1..7] |> List.map (\y -> { pos | y = y }) |> takeUntil (hasAnyPiece board)
+            , [0..pos.y - 1] |> List.reverse |> List.map (\y -> { pos | y = y }) |> takeUntil (hasAnyPiece board)
+            ]
+            |> List.filter (not << hasPlayerPiece piece.owner board)
+            |> toMoves board piece
 
 
-validBishopMoves : List Piece -> Player -> BoardPosition -> List BoardPosition
-validBishopMoves board player pos =
-    List.concat
-        [ [pos.x + 1..7] |> List.indexedMap (\i x -> { pos | x = x, y = pos.y + i + 1 }) |> takeUntil (hasAnyPiece board)
-        , [pos.x + 1..7] |> List.indexedMap (\i x -> { pos | x = x, y = pos.y - (i + 1) }) |> takeUntil (hasAnyPiece board)
-        , [0..pos.x - 1] |> List.reverse |> List.indexedMap (\i x -> { pos | x = x, y = pos.y + i + 1 }) |> takeUntil (hasAnyPiece board)
-        , [0..pos.x - 1] |> List.reverse |> List.indexedMap (\i x -> { pos | x = x, y = pos.y - (i + 1) }) |> takeUntil (hasAnyPiece board)
-        ]
-        |> List.filter (\p -> p.y >= 0 && p.y < 8)
-        |> List.filter (not << hasPlayerPiece player board)
+validBishopMoves : List Piece -> Piece -> List Move
+validBishopMoves board piece =
+    let
+        pos =
+            piece.position
+    in
+        List.concat
+            [ [pos.x + 1..7] |> List.indexedMap (\i x -> { pos | x = x, y = pos.y + i + 1 }) |> takeUntil (hasAnyPiece board)
+            , [pos.x + 1..7] |> List.indexedMap (\i x -> { pos | x = x, y = pos.y - (i + 1) }) |> takeUntil (hasAnyPiece board)
+            , [0..pos.x - 1] |> List.reverse |> List.indexedMap (\i x -> { pos | x = x, y = pos.y + i + 1 }) |> takeUntil (hasAnyPiece board)
+            , [0..pos.x - 1] |> List.reverse |> List.indexedMap (\i x -> { pos | x = x, y = pos.y - (i + 1) }) |> takeUntil (hasAnyPiece board)
+            ]
+            |> List.filter (\p -> p.y >= 0 && p.y < 8)
+            |> List.filter (not << hasPlayerPiece piece.owner board)
+            |> toMoves board piece
 
 
-validKnightMoves : List Piece -> Player -> BoardPosition -> List BoardPosition
-validKnightMoves board player pos =
+validKnightMoves : List Piece -> Piece -> List Move
+validKnightMoves board piece =
     [ ( 2, 1 ), ( -2, 1 ), ( 2, -1 ), ( -2, -1 ), ( 1, 2 ), ( -1, 2 ), ( 1, -2 ), ( -1, -2 ) ]
-        |> List.map (\( x, y ) -> (incX x >> incY y) pos)
+        |> List.map (\( x, y ) -> (incX x >> incY y) piece.position)
         |> List.filter (\p -> p.x >= 0 && p.y >= 0)
-        |> List.filter (not << hasPlayerPiece player board)
+        |> List.filter (not << hasPlayerPiece piece.owner board)
+        |> toMoves board piece
+
+
+toMoves : Board -> Piece -> List BoardPosition -> List Move
+toMoves board piece moves =
+    moves
+        |> List.map
+            (\m ->
+                { piece = piece
+                , position = m
+                , moveType =
+                    if hasPlayerPiece (other piece.owner) board m then
+                        Attack
+                    else
+                        Normal
+                }
+            )

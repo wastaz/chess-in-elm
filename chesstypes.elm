@@ -3,6 +3,7 @@ module ChessTypes exposing (..)
 import Mouse exposing (Position)
 import String
 
+
 type ChessPiece
     = Pawn
     | Rook
@@ -23,6 +24,18 @@ type alias BoardPosition =
     }
 
 
+type MoveType
+    = Normal
+    | Attack
+
+
+type alias Move =
+    { piece : Piece
+    , position : BoardPosition
+    , moveType : MoveType
+    }
+
+
 type alias Piece =
     { owner : Player
     , kind : ChessPiece
@@ -36,7 +49,7 @@ type alias Board =
 
 type alias Model =
     { board : Board
-    , markedSquares : List BoardPosition
+    , possibleMoves : List Move
     , activePiece : Maybe Piece
     , activePlayer : Player
     }
@@ -75,26 +88,40 @@ initialBoard =
 pieceToStr : Piece -> String
 pieceToStr piece =
     case piece.kind of
-        Pawn -> "P"
-        Rook -> "R"
-        Knight -> "K"
-        Bishop -> "B"
-        Queen -> "Q"
-        King -> "K"
+        Pawn ->
+            "P"
+
+        Rook ->
+            "R"
+
+        Knight ->
+            "K"
+
+        Bishop ->
+            "B"
+
+        Queen ->
+            "Q"
+
+        King ->
+            "K"
+
 
 boardToStr : Board -> String
 boardToStr board =
     [0..7]
-    |> List.map (\y -> 
-        [0..7] 
-        |> List.map (\x ->
-            board
-            |> List.filter (.position >> (==) { x = x, y = y})
-            |> List.map pieceToStr
-            |> List.head
-            |> Maybe.withDefault "_"
-        )
+        |> List.map
+            (\y ->
+                [0..7]
+                    |> List.map
+                        (\x ->
+                            board
+                                |> List.filter (.position >> (==) { x = x, y = y })
+                                |> List.map pieceToStr
+                                |> List.head
+                                |> Maybe.withDefault "_"
+                        )
+                    |> String.concat
+                    |> \s -> s ++ (String.fromChar '\n')
+            )
         |> String.concat
-        |> \s -> s ++ (String.fromChar '\n')
-    )
-    |> String.concat

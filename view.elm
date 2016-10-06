@@ -127,9 +127,18 @@ markSquareWithColor clr pos =
         |> move (positionToCoords pos)
 
 
-drawMarkedSquare : BoardPosition -> Collage.Form
-drawMarkedSquare =
-    markSquareWithColor Color.blue
+drawMarkedSquare : Move -> Collage.Form
+drawMarkedSquare move =
+    let
+        color =
+            case move.moveType of
+                Normal ->
+                    Color.blue
+
+                Attack ->
+                    Color.red
+    in
+        markSquareWithColor color move.position
 
 
 drawActivePieceSquare : BoardPosition -> Collage.Form
@@ -144,7 +153,7 @@ viewBoard model =
           , drawBoard Black |> toForm
           ]
         , drawPieces model.board
-        , List.map drawMarkedSquare model.markedSquares
+        , List.map drawMarkedSquare model.possibleMoves
         , [ model.activePiece |> Maybe.map (.position >> drawActivePieceSquare) ] |> List.filterMap identity
         ]
         |> collage 810 810
@@ -163,7 +172,7 @@ playerToString player =
 
 viewSidebar : Model -> Html.Html Msg
 viewSidebar model =
-    Html.div [ Attr.style [ ( "border", "5px solid black" ), ("padding", "5px"), ("text-align", "center") ] ]
+    Html.div [ Attr.style [ ( "border", "5px solid black" ), ( "padding", "5px" ), ( "text-align", "center" ) ] ]
         [ Html.div []
             [ Html.h1 [] [ Html.text "Current player" ]
             , Html.p [] [ Html.text <| playerToString model.activePlayer ]
